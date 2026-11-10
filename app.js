@@ -2,6 +2,8 @@
   "use strict";
 
   const $ = (sel) => document.querySelector(sel);
+  const _t = (key, fallback = "") => window.I18N ? window.I18N.t(key, fallback) : (fallback || key);
+  const _aptField = (apt, field) => window.I18N ? window.I18N.aptField(apt, field) : (apt?.[field] || "");
 
   // ---------- Data & Local Storage ----------
   const STORAGE_KEY_CUSTOM_APTS = "aptHunt.customApts";
@@ -25,7 +27,15 @@
   const customApts = loadCustomApts();
   const APTS = [...baseApts, ...customApts];
 
-  const sizeText = (a) => !a.sqft ? "" : `${a.sqft} sq ft` + (a.grossSqft ? ` saleable (${a.grossSqft} gross)` : "");
+  const sizeText = (a) => {
+    if (!a.sqft) return "";
+    const isZh = window.I18N && window.I18N.getLang() !== "en";
+    const sqftUnit = isZh ? "呎" : "sq ft";
+    const saleableWord = isZh ? "實用" : "saleable";
+    const grossWord = isZh ? "建築" : "gross";
+    return `${a.sqft} ${sqftUnit} ${saleableWord}` + (a.grossSqft ? ` (${a.grossSqft} ${grossWord})` : "");
+  };
+
   const money = (n) => (n || n === 0) && !isNaN(n) ? (window.CURRENCY || "$") + Number(Math.round(n)).toLocaleString() : "";
 
   // ---------- App state ----------
@@ -55,22 +65,79 @@
     })));
   }
 
+  // ---------- Language Switcher ----------
+  function initLangSwitch() {
+    const btns = document.querySelectorAll(".lang-btn");
+    const updateActive = () => {
+      const current = window.I18N ? window.I18N.getLang() : "zh-HK";
+      btns.forEach((b) => b.classList.toggle("on", b.dataset.lang === current));
+    };
+    btns.forEach((b) => {
+      b.onclick = () => {
+        if (window.I18N) {
+          window.I18N.setLang(b.dataset.lang);
+        }
+      };
+    });
+    updateActive();
+    if (window.I18N) {
+      window.I18N.onLangChange(() => {
+        updateActive();
+        updateStaticLabels();
+        mounted = null;
+        render();
+      });
+    }
+  }
+
+  function updateStaticLabels() {
+    const brand = $("#brand-title");
+    if (brand) brand.textContent = _t("app.title", "Apartment Hunt");
+    const tPhotos = $("#tab-btn-photos"); if (tPhotos) tPhotos.textContent = _t("nav.photos", "Photos");
+    const tPlan = $("#tab-btn-plan"); if (tPlan) tPlan.textContent = _t("nav.plan", "Floor plan");
+    const tComp = $("#tab-btn-compare"); if (tComp) tComp.textContent = _t("nav.compare", "Compare");
+
+    const sTitle = $(".sidebar-title-row h2"); if (sTitle) sTitle.textContent = _t("sidebar.title", "Apartments");
+    const sAdd = $("#btn-add-apt"); if (sAdd) sAdd.textContent = _t("sidebar.add", "+ Add");
+    const sShow = $(".sidebar-head .check");
+    if (sShow) {
+      const chk = $("#show-ruled-out");
+      sShow.innerHTML = "";
+      sShow.appendChild(chk);
+      sShow.appendChild(document.createTextNode(" " + _t("sidebar.showRuledOut", "Show ruled out")));
+    }
+    const sHint = $(".sidebar .hint");
+    if (sHint) sHint.innerHTML = _t("sidebar.hint", "To add or rule out apartments, edit apartments.js or click + Add.");
+
+    // Add dialog
+    const dTitle = $("#add-dialog h3"); if (dTitle) dTitle.textContent = _t("dlg.addTitle", "Add / Import Apartment Listing");
+    const dHint = $("#add-dialog .hint"); if (dHint) dHint.textContent = _t("dlg.addHint");
+  }
+
   // ---------- Sidebar ----------
   function renderList() {
     const ul = $("#apt-list");
     ul.innerHTML = "";
     const list = visibleApts();
     if (!list.length) {
-      ul.innerHTML = `<li class="meta">No apartments enabled.</li>`;
+      ul.innerHTML = `<li class="meta">${_t("sidebar.empty", "No apartments enabled.")}</li>`;
+      return;
     }
+    const isZh = window.I18N && window.I18N.getLang() !== "en";
     for (const a of list) {
       const li = document.createElement("li");
       if (a.id === state.aptId) li.classList.add("on");
       if (a.enabled === false) li.classList.add("off");
-      const bits = [money(a.rent) && money(a.rent) + "/mo", a.beds != null && `${a.beds} bd`, a.sqft && `${a.sqft} sq ft`].filter(Boolean);
+      const bits = [
+        money(a.rent) && money(a.rent) + (isZh ? "/月" : "/mo"),
+        a.beds != null && `${a.beds} ${isZh ? "房" : "bd"}`,
+        a.sqft && `${a.sqft} ${isZh ? "呎" : "sq ft"}`
+      ].filter(Boolean);
       li.innerHTML = `<div class="name"></div><div class="meta">${bits.join(" · ")}</div>`;
-      li.querySelector(".name").textContent = a.name || a.id;
-      if (a.enabled === false) li.querySelector(".name").insertAdjacentHTML("beforeend", `<span class="tag">ruled out</span>`);
+      li.querySelector(".name").textContent = _aptField(a, "name") || a.name || a.id;
+      if (a.enabled === false) {
+        li.querySelector(".name").insertAdjacentHTML("beforeend", `<span class="tag">${_t("sidebar.ruledOutTag", "ruled out")}</span>`);
+      }
       li.onclick = () => { selectApt(a.id); $("#sidebar").classList.remove("open"); };
       ul.appendChild(li);
     }
@@ -101,7 +168,7 @@
     if (!apt) { head.innerHTML = `<div class="empty">No apartments yet. Add one with "+ Add" or in apartments.js.</div>`; return; }
     head.innerHTML = "";
     const h = document.createElement("h2");
-    h.textContent = apt.name || apt.id;
+    h.textContent = _aptField(apt, "name") || apt.name || apt.id;
     head.appendChild(h);
     const facts = document.createElement("div");
     facts.className = "facts";
@@ -114,26 +181,29 @@
       span.appendChild(b);
       facts.appendChild(span);
     };
-    add("", apt.address);
-    add("Rent", money(apt.rent) && money(apt.rent) + "/mo");
-    add("Beds", apt.beds != null ? String(apt.beds) : "");
-    add("Baths", apt.baths != null ? String(apt.baths) : "");
-    add("Size", sizeText(apt));
-    add("Available", apt.available);
+    const isZh = window.I18N && window.I18N.getLang() !== "en";
+    add("", _aptField(apt, "address") || apt.address);
+    add(_t("photos.rent", "Rent"), money(apt.rent) && money(apt.rent) + (isZh ? "/月" : "/mo"));
+    add(_t("photos.beds", "Beds"), apt.beds != null ? String(apt.beds) : "");
+    add(_t("photos.baths", "Baths"), apt.baths != null ? String(apt.baths) : "");
+    add(_t("photos.size", "Size"), sizeText(apt));
+    add(_t("photos.available", "Available"), _aptField(apt, "available") || apt.available);
     head.appendChild(facts);
     if (apt.url) {
       const a = document.createElement("a");
-      a.href = apt.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open listing ↗";
+      a.href = apt.url; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = _t("photos.openListing", "Open listing ↗");
       head.appendChild(a);
     }
-    if (apt.notes) {
+    const notesText = _aptField(apt, "notes") || apt.notes;
+    if (notesText) {
       const p = document.createElement("p");
-      p.className = "notes"; p.textContent = apt.notes;
+      p.className = "notes"; p.textContent = notesText;
       head.appendChild(p);
     }
     const pics = [...apt.photos];
     if (!pics.length) {
-      gal.innerHTML = `<div class="empty">No photos yet for this apartment.</div>`;
+      gal.innerHTML = `<div class="empty">${_t("photos.noPhotos", "No photos yet for this apartment.")}</div>`;
       return;
     }
     pics.forEach((src, i) => {
@@ -169,10 +239,7 @@
     const stampDutyTenant = (annualRent * 0.0025) + 5;
     const firstMonthRent = rent;
 
-    // Upfront cash needed before moving in
     const upfrontCash = deposit + firstMonthRent + agentFee + stampDutyTenant;
-
-    // Year 1 Total Cost of Occupancy (12 months all-in rent/fees + agent fee + stamp duty)
     const year1Total = (allIn * 12) + agentFee + stampDutyTenant;
 
     return {
@@ -226,7 +293,6 @@
     const minR = Math.min(...rents), maxR = Math.max(...rents);
     if (minR === maxR) return 4;
     const r = a.allIn || a.rent;
-    // Lower rent => higher score (from 5 down to 1.5)
     return Math.max(1, Math.min(5, 5 - ((r - minR) / (maxR - minR)) * 3.5));
   }
 
@@ -236,7 +302,6 @@
     if (!sqfts.length) return 3;
     const minS = Math.min(...sqfts), maxS = Math.max(...sqfts);
     if (minS === maxS) return 4;
-    // Higher sqft => higher score (from 2 up to 5)
     return Math.max(1, Math.min(5, 2 + ((a.sqft - minS) / (maxS - minS)) * 3));
   }
 
@@ -256,7 +321,7 @@
   const dots = (n) => `<span class="dots" title="${n}/5">${"●".repeat(n)}<i>${"●".repeat(5 - n)}</i></span>`;
   const scoreText = (x) => x == null ? "" : `<b class="score">${x.toFixed(1)}</b> / 5`;
   const mapsLink = (from, to) => `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=transit`;
-  const origin = (a) => `${a.name}, ${a.address}, Hong Kong`;
+  const origin = (a) => `${_aptField(a, "name") || a.name}, ${_aptField(a, "address") || a.address}, Hong Kong`;
 
   function renderCompareControls(weights) {
     const ctrl = $("#compare-controls");
@@ -264,26 +329,26 @@
     ctrl.innerHTML = `
       <div class="compare-ctrl-header">
         <div>
-          <h3>Interactive Scorecard Weighting</h3>
-          <div class="hint" style="margin:2px 0 0">Adjust priority sliders to dynamically re-score and rank candidate apartments in real-time.</div>
+          <h3>${_t("compare.title", "Interactive Scorecard Weighting")}</h3>
+          <div class="hint" style="margin:2px 0 0">${_t("compare.desc")}</div>
         </div>
-        <button id="reset-weights-btn" class="btn" style="font-size:11px;padding:3px 8px">Reset Weights</button>
+        <button id="reset-weights-btn" class="btn" style="font-size:11px;padding:3px 8px">${_t("compare.reset", "Reset Weights")}</button>
       </div>
       <div class="slider-grid">
         <div class="slider-card">
-          <div class="slider-label"><span>💰 Budget / Rent</span><span class="slider-val" id="val-w-budget">${weights.budget}%</span></div>
+          <div class="slider-label"><span>${_t("compare.wBudget", "💰 Budget / Rent")}</span><span class="slider-val" id="val-w-budget">${weights.budget}%</span></div>
           <input type="range" id="slider-w-budget" min="0" max="100" step="5" value="${weights.budget}">
-          <div class="slider-desc">Prioritizes lower monthly rent and upfront moving cash</div>
+          <div class="slider-desc">${_t("compare.wBudgetDesc")}</div>
         </div>
         <div class="slider-card">
-          <div class="slider-label"><span>🚇 Commute & Transit</span><span class="slider-val" id="val-w-transit">${weights.transit}%</span></div>
+          <div class="slider-label"><span>${_t("compare.wTransit", "🚇 Commute & Transit")}</span><span class="slider-val" id="val-w-transit">${weights.transit}%</span></div>
           <input type="range" id="slider-w-transit" min="0" max="100" step="5" value="${weights.transit}">
-          <div class="slider-desc">Door-to-door transit minutes to Central (Landmark) & Jardine's Lookout</div>
+          <div class="slider-desc">${_t("compare.wTransitDesc")}</div>
         </div>
         <div class="slider-card">
-          <div class="slider-label"><span>📐 Living Space / Size</span><span class="slider-val" id="val-w-space">${weights.space}%</span></div>
+          <div class="slider-label"><span>${_t("compare.wSpace", "📐 Living Space / Size")}</span><span class="slider-val" id="val-w-space">${weights.space}%</span></div>
           <input type="range" id="slider-w-space" min="0" max="100" step="5" value="${weights.space}">
-          <div class="slider-desc">Emphasizes larger saleable square footage</div>
+          <div class="slider-desc">${_t("compare.wSpaceDesc")}</div>
         </div>
       </div>
     `;
@@ -320,7 +385,7 @@
     const apts = enabledApts();
     const table = $("#compare-table");
     const plans = $("#compare-plans");
-    if (!apts.length) { table.innerHTML = ""; plans.innerHTML = `<div class="empty">No apartments enabled.</div>`; return; }
+    if (!apts.length) { table.innerHTML = ""; plans.innerHTML = `<div class="empty">${_t("sidebar.empty", "No apartments enabled.")}</div>`; return; }
 
     const weights = loadScoreWeights();
     const scores = apts.map((a) => calcCompositeScore(a, apts, weights));
@@ -330,67 +395,88 @@
     const sorted = apts.map((a, i) => ({ a, i, score: scores[i] || 0 })).sort((x, y) => y.score - x.score);
     sorted.forEach((item, r) => rankMap.set(item.a.id, r + 1));
 
+    const isZh = window.I18N && window.I18N.getLang() !== "en";
     const rankBadges = apts.map((a) => {
       const r = rankMap.get(a.id);
       const cls = r === 1 ? "rank-1" : r === 2 ? "rank-2" : r === 3 ? "rank-3" : "rank-other";
-      const medal = r === 1 ? "🥇 #1 Match" : r === 2 ? "🥈 #2 Match" : r === 3 ? "🥉 #3 Match" : `#${r}`;
+      const medal = r === 1
+        ? _t("compare.rank1", "🥇 #1 Match")
+        : r === 2
+        ? _t("compare.rank2", "🥈 #2 Match")
+        : r === 3
+        ? _t("compare.rank3", "🥉 #3 Match")
+        : `#${r}`;
       return `<div class="rank-badge ${cls}">${medal}</div>`;
     });
 
     const COMPARE_ROWS = [
-      ["Match Rank", (a) => rankBadges[apts.indexOf(a)], true],
-      ["Composite Score", (a) => {
+      [_t("row.rank", "Match Rank"), (a) => rankBadges[apts.indexOf(a)], true],
+      [_t("row.composite", "Composite Score"), (a) => {
         const sc = calcCompositeScore(a, apts, weights);
         return sc ? `<div class="overall-score-cell">${sc.toFixed(2)} <span style="font-size:12px;color:var(--muted)">/ 5.0</span></div>` : "";
       }, true],
-      ["Photo", (a) => a.photos[0] ? `<img src="${encodeURI(a.photos[0])}" alt="">` : "", true],
-      ["Rent", (a) => money(a.rent) && money(a.rent) + "/mo"],
-      ["Rent ±10%", (a) => a.rent ? `${money(Math.round(a.rent * 0.9))} – ${money(Math.round(a.rent * 1.1))}` : ""],
-      ["Fees", (a) => a.fees],
-      ["All-in / month", (a) => money(a.allIn || a.rent)],
-      ["Beds / baths", (a) => [a.beds, a.baths].every((x) => x == null) ? "" : `${a.beds ?? "?"} bd / ${a.baths ?? "?"} ba`],
-      ["Size", (a) => sizeText(a)],
-      ["Building", (a) => a.building],
-      ["Floor", (a) => a.floor],
-      ["Per sq ft", (a) => a.rent && a.sqft ? (window.CURRENCY || "$") + (a.rent / a.sqft).toFixed(2) : ""],
-      ["Available", (a) => a.available],
-      ["section", "Financials & Total Cost of Occupancy (HK)"],
-      ["Upfront cash required", (a) => {
+      [_t("row.photo", "Photo"), (a) => a.photos[0] ? `<img src="${encodeURI(a.photos[0])}" alt="">` : "", true],
+      [_t("row.rent", "Rent"), (a) => money(a.rent) && money(a.rent) + (isZh ? "/月" : "/mo")],
+      [_t("row.rentRange", "Rent ±10%"), (a) => a.rent ? `${money(Math.round(a.rent * 0.9))} – ${money(Math.round(a.rent * 1.1))}` : ""],
+      [_t("row.fees", "Fees"), (a) => _aptField(a, "fees") || a.fees],
+      [_t("row.allIn", "All-in / month"), (a) => money(a.allIn || a.rent)],
+      [_t("row.bedsBaths", "Beds / baths"), (a) => [a.beds, a.baths].every((x) => x == null) ? "" : `${a.beds ?? "?"} ${isZh ? "房" : "bd"} / ${a.baths ?? "?"} ${isZh ? "衛" : "ba"}`],
+      [_t("row.size", "Size"), (a) => sizeText(a)],
+      [_t("row.building", "Building"), (a) => _aptField(a, "building") || a.building],
+      [_t("row.floor", "Floor"), (a) => _aptField(a, "floor") || a.floor],
+      [_t("row.perSqft", "Per sq ft"), (a) => a.rent && a.sqft ? (window.CURRENCY || "$") + (a.rent / a.sqft).toFixed(2) + (isZh ? " /呎" : " /sq ft") : ""],
+      [_t("row.available", "Available"), (a) => _aptField(a, "available") || a.available],
+      ["section", _t("sec.financials", "Financials & Total Cost of Occupancy (HK)")],
+      [_t("row.upfront", "Upfront cash required"), (a) => {
         const t = calcTCO(a);
         if (!t) return "";
-        return `<b>${money(t.upfrontCash)}</b><div class="sub">Deposit: ${money(t.deposit)} (2 mo)<br>1st Mo Rent: ${money(t.monthlyRent)}<br>Agent Fee: ${money(t.agentFee)} (0.5 mo)<br>Stamp Duty: ${money(t.stampDutyTenant)}</div>`;
+        const depLbl = isZh ? "按金 (2個月)" : "Deposit (2 mo)";
+        const rentLbl = isZh ? "首月租金" : "1st Mo Rent";
+        const agtLbl = isZh ? "地產代理佣金 (半個月)" : "Agent Fee (0.5 mo)";
+        const stmLbl = isZh ? "稅務局租約印花稅" : "Stamp Duty";
+        return `<b>${money(t.upfrontCash)}</b><div class="sub">${depLbl}: ${money(t.deposit)}<br>${rentLbl}: ${money(t.monthlyRent)}<br>${agtLbl}: ${money(t.agentFee)}<br>${stmLbl}: ${money(t.stampDutyTenant)}</div>`;
       }, true],
-      ["1st Year Total Outlay (TCO)", (a) => {
+      [_t("row.tco", "1st Year Total Outlay (TCO)"), (a) => {
         const t = calcTCO(a);
         if (!t) return "";
-        return `<b>${money(t.year1Total)}</b><div class="sub">12 mo all-in (${money((a.allIn || a.rent) * 12)}) + Agent (${money(t.agentFee)}) + Stamp Duty (${money(t.stampDutyTenant)})</div>`;
+        const rent12 = isZh ? `12個月全包租金 (${money((a.allIn || a.rent) * 12)})` : `12 mo all-in (${money((a.allIn || a.rent) * 12)})`;
+        const agt = isZh ? `代理佣金 (${money(t.agentFee)})` : `Agent (${money(t.agentFee)})`;
+        const stm = isZh ? `印花稅 (${money(t.stampDutyTenant)})` : `Stamp Duty (${money(t.stampDutyTenant)})`;
+        return `<b>${money(t.year1Total)}</b><div class="sub">${rent12} + ${agt} + ${stm}</div>`;
       }, true],
-      ["section", "Transport (estimates)"],
-      ["Transport score", (a) => scoreText(transportScore(a)), true],
-      ["MTR", (a) => a.transport ? `${dots(band(a.transport.mtrWalk, WALK_BANDS))} ${esc(a.transport.mtr)}, ${a.transport.mtrWalk} min walk` : "", true],
-      ["Bus / minibus", (a) => a.transport ? `${dots(band(a.transport.busWalk, WALK_BANDS))} ${esc(a.transport.bus)}, ${a.transport.busWalk} min walk` : "", true],
-      ...DEST.map((d) => [d.label, (a) => {
-        const t = a.transport?.[d.key];
-        if (!t) return "";
-        return `${dots(band(t.min, TIME_BANDS))} <b>~${t.min} min</b><div class="sub">${esc(t.how)}</div><a href="${mapsLink(origin(a), d.place)}" target="_blank" rel="noopener">Check in Google Maps ↗</a>`;
-      }, true]),
-      ["Commute", (a) => a.commute],
+      ["section", _t("sec.transport", "Transport (estimates)")],
+      [_t("row.transScore", "Transport score"), (a) => scoreText(transportScore(a)), true],
+      [_t("row.mtr", "MTR"), (a) => a.transport ? `${dots(band(a.transport.mtrWalk, WALK_BANDS))} ${esc(_aptField(a.transport, "mtr") || a.transport.mtr)}, ${a.transport.mtrWalk} ${isZh ? "分鐘步行" : "min walk"}` : "", true],
+      [_t("row.bus", "Bus / minibus"), (a) => a.transport ? `${dots(band(a.transport.busWalk, WALK_BANDS))} ${esc(_aptField(a.transport, "bus") || a.transport.bus)}, ${a.transport.busWalk} ${isZh ? "分鐘步行" : "min walk"}` : "", true],
+      ...DEST.map((d) => [
+        _aptField(d, "label") || d.label,
+        (a) => {
+          const t = a.transport?.[d.key];
+          if (!t) return "";
+          const howText = _aptField(t, "how") || t.how;
+          const mapText = isZh ? "於 Google Maps 查看路線 ↗" : "Check in Google Maps ↗";
+          return `${dots(band(t.min, TIME_BANDS))} <b>~${t.min} ${isZh ? "分鐘" : "min"}</b><div class="sub">${esc(howText)}</div><a href="${mapsLink(origin(a), d.place)}" target="_blank" rel="noopener">${mapText}</a>`;
+        },
+        true
+      ]),
+      [isZh ? "主要特色與優點" : "Key Highlights", (a) => _aptField(a, "pros") || a.pros],
+      [isZh ? "考量因素" : "Considerations", (a) => _aptField(a, "cons") || a.cons],
     ];
 
     const BEST = {
-      "Composite Score": (a) => calcCompositeScore(a, apts, weights),
-      "Rent": (a) => -a.rent,
-      "All-in / month": (a) => a.allIn ? -a.allIn : -a.rent,
-      "Upfront cash required": (a) => { const t = calcTCO(a); return t ? -t.upfrontCash : null; },
-      "1st Year Total Outlay (TCO)": (a) => { const t = calcTCO(a); return t ? -t.year1Total : null; },
-      "Size": (a) => a.sqft,
-      "Per sq ft": (a) => a.rent && a.sqft ? -(a.rent / a.sqft) : null,
-      "Transport score": transportScore,
-      "MTR": (a) => a.transport ? -a.transport.mtrWalk : null,
-      ...Object.fromEntries(DEST.map((d) => [d.label, (a) => a.transport?.[d.key] ? -a.transport[d.key].min : null])),
+      [_t("row.composite", "Composite Score")]: (a) => calcCompositeScore(a, apts, weights),
+      [_t("row.rent", "Rent")]: (a) => -a.rent,
+      [_t("row.allIn", "All-in / month")]: (a) => a.allIn ? -a.allIn : -a.rent,
+      [_t("row.upfront", "Upfront cash required")]: (a) => { const t = calcTCO(a); return t ? -t.upfrontCash : null; },
+      [_t("row.tco", "1st Year Total Outlay (TCO)")]: (a) => { const t = calcTCO(a); return t ? -t.year1Total : null; },
+      [_t("row.size", "Size")]: (a) => a.sqft,
+      [_t("row.perSqft", "Per sq ft")]: (a) => a.rent && a.sqft ? -(a.rent / a.sqft) : null,
+      [_t("row.transScore", "Transport score")]: transportScore,
+      [_t("row.mtr", "MTR")]: (a) => a.transport ? -a.transport.mtrWalk : null,
+      ...Object.fromEntries(DEST.map((d) => [_aptField(d, "label") || d.label, (a) => a.transport?.[d.key] ? -a.transport[d.key].min : null])),
     };
 
-    let html = `<thead><tr><th></th>${apts.map((a, i) => `<th>${rankBadges[i]}<br>${esc(a.name || a.id)}</th>`).join("")}</tr></thead><tbody>`;
+    let html = `<thead><tr><th></th>${apts.map((a, i) => `<th>${rankBadges[i]}<br>${esc(_aptField(a, "name") || a.name || a.id)}</th>`).join("")}</tr></thead><tbody>`;
     for (const [label, fn, raw] of COMPARE_ROWS) {
       if (label === "section") { html += `<tr class="row-section"><th colspan="${apts.length + 1}">${esc(fn)}</th></tr>`; continue; }
       const vals = apts.map(fn);
@@ -411,14 +497,18 @@
     for (const a of apts) {
       const fig = document.createElement("figure");
       const cap = document.createElement("figcaption");
-      cap.textContent = a.name || a.id;
+      cap.textContent = _aptField(a, "name") || a.name || a.id;
       const size = !window.PLANS[a.id] && a.floorPlan ? await loadImageSize(a.floorPlan) : null;
       const svgEl = Planner.renderStatic(a, size, K);
       if (!svgEl) {
         const d = document.createElement("div");
         d.className = "hint";
         d.style.width = "180px";
-        d.textContent = !a.floorPlan ? "No floor plan yet." : !size ? "Floor plan didn't load." : "Scale not set yet. Open Floor plan and use Set scale.";
+        d.textContent = !a.floorPlan
+          ? (isZh ? "暫無平面圖則。" : "No floor plan yet.")
+          : !size
+          ? (isZh ? "圖則載入中。" : "Floor plan didn't load.")
+          : (isZh ? "尚未校準比例。請前往「平面圖」分頁點擊「校準比例」。" : "Scale not set yet. Open Floor plan and use Set scale.");
         fig.appendChild(d);
       } else fig.appendChild(svgEl);
       fig.appendChild(cap);
@@ -427,20 +517,37 @@
   }
 
   function renderRubric() {
+    const isZh = window.I18N && window.I18N.getLang() !== "en";
     const rng = (bands, unit) => [`≤${bands[0]} ${unit}`, `${bands[0] + 1}–${bands[1]}`, `${bands[1] + 1}–${bands[2]}`, `${bands[2] + 1}–${bands[3]}`, `>${bands[3]} ${unit}`];
-    const t = rng(TIME_BANDS, "min"), w = rng(WALK_BANDS, "min");
-    const weights = [...DEST.map((d) => `${d.label} ${Math.round(d.weight * 100)}%`), `MTR walk ${W_MTR * 100}%`, `bus walk ${W_BUS * 100}%`].join(", ");
-    $("#rubric").innerHTML = `<summary>How the scores work</summary>
-      <h4>Composite Match Score</h4>
-      <p>Uses your customized weights above (Budget, Transit, Space) to calculate overall match scores and rank all candidate apartments side-by-side.</p>
-      <h4>Total Cost of Occupancy (TCO)</h4>
-      <p>Reflects real Hong Kong tenancy market rules: 2 months security deposit + 1st month rent + 0.5 month agent commission + standard IRD lease stamp duty (0.25% of annual rent + HK$5 counterpart).</p>
-      <h4>Transport score</h4>
-      <p>Each factor gets 1 to 5, then a weighted average: ${esc(weights)}.</p>
-      <table class="rubric-table"><thead><tr><th>Score</th><th>Door-to-door by public transport</th><th>Walk to MTR or bus stop</th></tr></thead><tbody>
-      ${[0, 1, 2, 3, 4].map((i) => `<tr><td>${dots(5 - i)}</td><td>${t[i]}</td><td>${w[i]}</td></tr>`).join("")}
-      </tbody></table>
-      <p class="hint">Times are estimates for a weekday morning (walk + wait + ride). Use the Google Maps links in each cell to verify live conditions.</p>`;
+    const unitMin = isZh ? "分" : "min";
+    const t = rng(TIME_BANDS, unitMin), w = rng(WALK_BANDS, unitMin);
+    const weights = [...DEST.map((d) => `${_aptField(d, "label") || d.label} ${Math.round(d.weight * 100)}%`), `${isZh ? "港鐵步行" : "MTR walk"} ${W_MTR * 100}%`, `${isZh ? "巴士步行" : "bus walk"} ${W_BUS * 100}%`].join(", ");
+
+    if (isZh) {
+      $("#rubric").innerHTML = `<summary>評分計算說明與依據</summary>
+        <h4>綜合匹配得分 (Composite Score)</h4>
+        <p>依據您上方自訂的權重比例（預算、交通、實用空間），即時計算所有候選樓盤的綜合適配指數並進行排名。</p>
+        <h4>首年居住總成本 (Total Cost of Occupancy - TCO)</h4>
+        <p>嚴格依循香港住宅租賃真實市場常規：2個月按金 + 1個月首期租金 + 0.5個月地產代理佣金 + 香港稅務局標準租約印花稅（一年期租約：年租金之0.25% + HK$5副本文本）。</p>
+        <h4>交通通達度得分 (Transport Score)</h4>
+        <p>依據平日早晨尖峰時段各路段耗時換算為1至5分等級，權重配置：${esc(weights)}。</p>
+        <table class="rubric-table"><thead><tr><th>評級</th><th>公共交通門到門總時間</th><th>步行至港鐵或巴士站</th></tr></thead><tbody>
+        ${[0, 1, 2, 3, 4].map((i) => `<tr><td>${dots(5 - i)}</td><td>${t[i]}</td><td>${w[i]}</td></tr>`).join("")}
+        </tbody></table>
+        <p class="hint">時間為平日早晨通勤預估值（包含步行、候車與搭乘）。點擊表格內 Google Maps 連結可查看即時路況。</p>`;
+    } else {
+      $("#rubric").innerHTML = `<summary>How the scores work</summary>
+        <h4>Composite Match Score</h4>
+        <p>Uses your customized weights above (Budget, Transit, Space) to calculate overall match scores and rank all candidate apartments side-by-side.</p>
+        <h4>Total Cost of Occupancy (TCO)</h4>
+        <p>Reflects real Hong Kong tenancy market rules: 2 months security deposit + 1st month rent + 0.5 month agent commission + standard IRD lease stamp duty (0.25% of annual rent + HK$5 counterpart).</p>
+        <h4>Transport score</h4>
+        <p>Each factor gets 1 to 5, then a weighted average: ${esc(weights)}.</p>
+        <table class="rubric-table"><thead><tr><th>Score</th><th>Door-to-door by public transport</th><th>Walk to MTR or bus stop</th></tr></thead><tbody>
+        ${[0, 1, 2, 3, 4].map((i) => `<tr><td>${dots(5 - i)}</td><td>${t[i]}</td><td>${w[i]}</td></tr>`).join("")}
+        </tbody></table>
+        <p class="hint">Times are estimates for a weekday morning (walk + wait + ride). Use the Google Maps links in each cell to verify live conditions.</p>`;
+    }
   }
 
   const imgSize = {};
@@ -563,6 +670,7 @@
     }
     document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === state.tab));
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("on", p.id === "tab-" + state.tab));
+    updateStaticLabels();
     renderList();
     writeHash();
     if (state.tab === "photos") renderPhotos();
@@ -575,6 +683,7 @@
   $("#show-ruled-out").onchange = (e) => { state.showRuledOut = e.target.checked; render(); };
   $("#menu-btn").onclick = () => $("#sidebar").classList.toggle("open");
 
+  initLangSwitch();
   initAddDialog();
   readHash();
   loadPlanFiles().then(render);

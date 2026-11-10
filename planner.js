@@ -268,46 +268,48 @@
 
     const persist = () => { const s = loadSaved(apt.id); s.items = items; storeSaved(apt.id, s); };
 
+    const _t = (k, fb) => window.I18N ? window.I18N.t(k, fb) : fb;
+
     root.innerHTML = `
       <div class="planner">
         <aside class="rail">
-          ${P && P.presets ? `<h2>Layouts</h2><div class="presets">${Object.keys(P.presets).map((k) => `<button class="btn${k === P.defaultPreset ? " primary" : ""}" data-preset="${k}">${(P.presetNames || {})[k] || k}</button>`).join("")}</div>` : ""}
-          <h2>Furniture Packs</h2>
+          ${P && P.presets ? `<h2>${_t("planner.layouts", "Layouts")}</h2><div class="presets">${Object.keys(P.presets).map((k) => `<button class="btn${k === P.defaultPreset ? " primary" : ""}" data-preset="${k}">${(P.presetNames || {})[k] || k}</button>`).join("")}</div>` : ""}
+          <h2>${_t("planner.packs", "Furniture Packs")}</h2>
           <div class="pack-grid">
-            <button class="pack-btn" data-pack="wfh"><b>💼 WFH Setup</b><span>Desk, Chair, Shelf & Lamp</span></button>
-            <button class="pack-btn" data-pack="living"><b>🛋️ Living Room</b><span>Sofa, Coffee Table, TV & Rug</span></button>
-            <button class="pack-btn" data-pack="bedroom"><b>🛏️ Queen Bedroom</b><span>Bed, 2 Nightstands & Wardrobe</span></button>
+            <button class="pack-btn" data-pack="wfh"><b>${_t("planner.packWfh", "💼 WFH Setup")}</b><span>${_t("planner.packWfhDesc", "Desk, Chair, Shelf & Lamp")}</span></button>
+            <button class="pack-btn" data-pack="living"><b>${_t("planner.packLiving", "🛋️ Living Room")}</b><span>${_t("planner.packLivingDesc", "Sofa, Coffee Table, TV & Rug")}</span></button>
+            <button class="pack-btn" data-pack="bedroom"><b>${_t("planner.packBedroom", "🛏️ Queen Bedroom")}</b><span>${_t("planner.packBedroomDesc", "Bed, 2 Nightstands & Wardrobe")}</span></button>
           </div>
-          <h2>Add furniture</h2>
+          <h2>${_t("planner.addFurniture", "Add furniture")}</h2>
           <div class="cat"></div>
-          <h2>Custom size</h2>
+          <h2>${_t("planner.customSize", "Custom size")}</h2>
           <div class="custom">
-            <input class="c-name" placeholder="Name, e.g. our sofa">
-            <div class="row2"><input class="c-w" placeholder="Width, e.g. 220"><input class="c-d" placeholder="Depth, e.g. 95"></div>
-            <button class="btn c-add">Add piece</button>
+            <input class="c-name" placeholder="${_t("planner.customName", "Name, e.g. our sofa")}">
+            <div class="row2"><input class="c-w" placeholder="${_t("planner.customW", "Width, e.g. 220")}"><input class="c-d" placeholder="${_t("planner.customD", "Depth, e.g. 95")}"></div>
+            <button class="btn c-add">${_t("planner.addPiece", "Add piece")}</button>
           </div>
-          <h2>Save</h2>
-          <p class="note">Saved in this browser. Export to keep it in the repo or move it to another device.</p>
-          <div class="presets"><button class="btn x-export">Export</button><label class="btn file-btn">Import<input type="file" accept=".json" hidden class="x-import"></label><button class="btn danger x-clear">Clear furniture</button></div>
+          <h2>${_t("planner.save", "Save")}</h2>
+          <p class="note">${_t("planner.saveNote", "Saved in this browser. Export to keep it in the repo or move it to another device.")}</p>
+          <div class="presets"><button class="btn x-export">${_t("planner.export", "Export")}</button><label class="btn file-btn">${_t("planner.import", "Import")}<input type="file" accept=".json" hidden class="x-import"></label><button class="btn danger x-clear">${_t("planner.clear", "Clear furniture")}</button></div>
         </aside>
         <section class="pmain">
           <div class="ptop">
-            <div class="seg view-seg"><button data-v="2d" class="on">Plan</button><button data-v="3d">3D</button></div>
-            <div class="seg cam-seg" style="display:none"><button data-c="orbit" class="on">Orbit</button><button data-c="fps">Walkthrough</button></div>
+            <div class="seg view-seg"><button data-v="2d" class="on">${_t("planner.v2d", "Plan")}</button><button data-v="3d">${_t("planner.v3d", "3D")}</button></div>
+            <div class="seg cam-seg" style="display:none"><button data-c="orbit" class="on">${_t("planner.cOrbit", "Orbit")}</button><button data-c="fps">${_t("planner.cFps", "Walkthrough")}</button></div>
             <div class="seg tool-seg">
-              <button data-m="move" class="on">Move</button>
-              <button data-m="measure">Measure</button>
-              ${P ? "" : `<button data-m="calibrate">Set scale</button>`}
+              <button data-m="move" class="on">${_t("planner.mMove", "Move")}</button>
+              <button data-m="measure">${_t("planner.mMeasure", "Measure")}</button>
+              ${P ? "" : `<button data-m="calibrate">${_t("planner.mCalibrate", "Set scale")}</button>`}
             </div>
-            <div class="seg zoom-seg"><button class="z-out" title="Zoom out">−</button><button class="z-fit">Fit</button><button class="z-in" title="Zoom in">+</button></div>
-            ${P && apt.floorPlan ? `<label class="chk"><input type="checkbox" class="ref-toggle"> Listing plan overlay</label>` : ""}
+            <div class="seg zoom-seg"><button class="z-out" title="Zoom out">−</button><button class="z-fit">${_t("planner.zFit", "Fit")}</button><button class="z-in" title="Zoom in">+</button></div>
+            ${P && apt.floorPlan ? `<label class="chk"><input type="checkbox" class="ref-toggle"> ${_t("planner.listingOverlay", "Listing plan overlay")}</label>` : ""}
           </div>
           <div class="toolbar"></div>
           <div class="stage stage2d"><svg class="plan-svg" xmlns="${NS}"></svg><div class="plan-empty" hidden></div></div>
           <div class="stage stage3d" hidden>
             <div class="view3d"></div>
             <div class="fps-overlay" style="display:none">
-              <span>🖱️ <b>Drag mouse forward/back to walk</b> · <b>Drag left/right to steer</b> · <b>Click floor to move</b> · <b>Scroll wheel to walk</b></span>
+              <span>${_t("planner.fpsHelp", "🖱️ Drag mouse forward/back to walk · Drag left/right to steer · Click floor to move · Scroll wheel to walk")}</span>
             </div>
           </div>
           <p class="note src-note"></p>
@@ -320,9 +322,10 @@
     const cat = $(".cat"); let lastG = "";
     Object.entries(CATALOGUE).forEach(([k, v]) => {
       if (k === "box") return;
-      if (v.g !== lastG) { lastG = v.g; const h = document.createElement("h3"); h.textContent = v.g; cat.appendChild(h); }
+      if (v.g !== lastG) { lastG = v.g; const h = document.createElement("h3"); h.textContent = _t("cat." + v.g, v.g); cat.appendChild(h); }
       const b = document.createElement("button");
-      b.innerHTML = `${v.n}<span>${v.w}×${v.d}</span>`;
+      const itemName = _t("furn." + k, v.n);
+      b.innerHTML = `${itemName}<span>${v.w}×${v.d}</span>`;
       b.onclick = () => addItem({ type: k, w: v.w, d: v.d });
       cat.appendChild(b);
     });
@@ -437,9 +440,24 @@
 
     function renderToolbar(clashes) {
       const it = items.find((i) => i.id === sel);
-      const warn = clashes.size ? `<span class="warn">${clashes.size} pieces overlap</span>` : "";
-      const dimsT = `<label class="chk"><input type="checkbox" class="dims" ${showDims ? "checked" : ""}> Sizes</label>`;
-      const hints = { move: scaleReady() ? "Tap a piece to move, rotate or resize it. Drag empty space to pan, scroll to zoom." : "Set the scale first: click Set scale, then both ends of a wall whose length is printed on the plan.", measure: "Click two points to measure.", calibrate: "Click both ends of a wall or dimension line with a known length." };
+      const overlapWord = window.I18N && window.I18N.getLang() !== "en" ? (window.I18N.getLang() === "zh-CN" ? "件家具重叠" : "件家具重疊") : "pieces overlap";
+      const warn = clashes.size ? `<span class="warn">${clashes.size} ${overlapWord}</span>` : "";
+      const dimsT = `<label class="chk"><input type="checkbox" class="dims" ${showDims ? "checked" : ""}> ${_t("planner.sizes", "Sizes")}</label>`;
+      const hints = {
+        move: scaleReady()
+          ? (window.I18N && window.I18N.getLang() !== "en"
+              ? "點擊家具可移動、旋轉或調整大小。拖曳空白處平移，滾輪縮放。"
+              : "Tap a piece to move, rotate or resize it. Drag empty space to pan, scroll to zoom.")
+          : (window.I18N && window.I18N.getLang() !== "en"
+              ? "請先設定比例：點擊「校準比例」，再點擊圖則上已知長度的牆面兩端。"
+              : "Set the scale first: click Set scale, then both ends of a wall whose length is printed on the plan."),
+        measure: (window.I18N && window.I18N.getLang() !== "en"
+          ? "點擊圖則上任意兩點即可測量距離。"
+          : "Click two points to measure."),
+        calibrate: (window.I18N && window.I18N.getLang() !== "en"
+          ? "點擊圖則上已知長度牆面或尺寸線的兩端。"
+          : "Click both ends of a wall or dimension line with a known length.")
+      };
       if (!it) tb.innerHTML = `<span class="hint">${hints[mode]}</span><span class="spacer"></span>${warn}${dimsT}`;
       else {
         tb.innerHTML = `<span class="name"></span>
@@ -558,7 +576,7 @@
       $(".stage2d").hidden = v === "3d"; $(".stage3d").hidden = v !== "3d";
       [".tool-seg", ".zoom-seg", ".toolbar"].forEach((q) => { const n = root.querySelector(q); if (n) n.style.display = v === "3d" ? "none" : ""; });
       const camSeg = root.querySelector(".cam-seg"); if (camSeg) camSeg.style.display = v === "3d" ? "inline-flex" : "none";
-      $(".src-note").textContent = v === "3d" ? "3D Mode: Switch between Orbit and First-Person Walkthrough." : (P ? P.source || "" : "");
+      $(".src-note").textContent = v === "3d" ? (window.I18N ? window.I18N.t("planner.fpsNote", "3D Mode: Switch between Orbit and First-Person Walkthrough.") : "3D Mode: Switch between Orbit and First-Person Walkthrough.") : (P ? P.source || "" : "");
       if (v === "3d") {
         if (!window.THREE) { $(".view3d").innerHTML = `<p class="note" style="padding:16px">The 3D view needs Three.js which didn't load.</p>`; return; }
         if (!scaleReady()) { $(".view3d").innerHTML = `<p class="note" style="padding:16px">Set the plan's scale first.</p>`; return; }
