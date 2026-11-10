@@ -90,9 +90,15 @@ window.APARTMENTS = [
     notes_zh: "資料來源：28Hse 盤源編號 #4052107。3座中層D室，附露台及標準獨立廚房。",
     notes_cn: "资料来源：28Hse 房源编号 #4052107。3座中层D室，附带阳台及独立厨房。",
     photos: [
-      "https://hkvrdata.centanet.com/CNHK-28491_d4148ac6cc7a4b30b85e85a4a7cd2909/CoverImage/Cover.jpg",
-      "apartments/ming-sun-building/photo-01.jpg",
-      "apartments/ming-sun-building/photo-02.jpg"
+      "apartments/the-zenith/photo-01.jpg",
+      "apartments/the-zenith/photo-02.jpg",
+      "apartments/the-zenith/photo-03.jpg",
+      "apartments/the-zenith/photo-04.jpg",
+      "apartments/the-zenith/photo-05.jpg",
+      "apartments/the-zenith/photo-06.jpg",
+      "apartments/the-zenith/photo-07.jpg",
+      "apartments/the-zenith/photo-08.jpg",
+      "https://hkvrdata.centanet.com/CNHK-28491_d4148ac6cc7a4b30b85e85a4a7cd2909/CoverImage/Cover.jpg"
     ],
     floorPlan: "apartments/the-zenith/floorplan.svg",
     planFile: "apartments/the-zenith/plan.js",
@@ -156,6 +162,14 @@ window.APARTMENTS = [
     notes_zh: "資料來源：中原地產 #LCV154 及 House730 #9260579。1座中層優質單位，附露台及全屋名牌家電。",
     notes_cn: "资料来源：中原地产 #LCV154 及 House730 #9260579。1座中层优质单位，带阳台及全套品牌家电。",
     photos: [
+      "apartments/island-crest/photo-01.jpg",
+      "apartments/island-crest/photo-02.jpg",
+      "apartments/island-crest/photo-03.jpg",
+      "apartments/island-crest/photo-04.jpg",
+      "apartments/island-crest/photo-05.jpg",
+      "apartments/island-crest/photo-06.jpg",
+      "apartments/island-crest/photo-07.jpg",
+      "apartments/island-crest/photo-08.jpg",
       "https://hkvrdata.centanet.com/CNHK-50467_48e873772ab64a4eb8c16e6b52547b50/CoverImage/Cover.jpg",
       "https://hkvrdata.centanet.com/CNHK-24850_f50d6aa7cf4e406dbc09e0b9c899049b/CoverImage/Cover.jpg"
     ],
@@ -220,8 +234,15 @@ window.APARTMENTS = [
     notes_zh: "資料來源：28Hse #4092185。高層2房單位，附觀景露台與頂級裝潢。",
     notes_cn: "资料来源：28Hse #4092185。高层2房单位，带景观阳台与精致装修。",
     photos: [
-      "https://hkvrdata.centanet.com/CNHK-06269_f7d540d36c1544e2b31558f4af790ec0/CoverImage/Cover.jpg",
-      "apartments/ying-wa-court/photo-01.jpg"
+      "apartments/one-artlane/photo-01.jpg",
+      "apartments/one-artlane/photo-02.jpg",
+      "apartments/one-artlane/photo-03.jpg",
+      "apartments/one-artlane/photo-04.jpg",
+      "apartments/one-artlane/photo-05.jpg",
+      "apartments/one-artlane/photo-06.jpg",
+      "apartments/one-artlane/photo-07.jpg",
+      "apartments/one-artlane/photo-08.jpg",
+      "https://hkvrdata.centanet.com/CNHK-06269_f7d540d36c1544e2b31558f4af790ec0/CoverImage/Cover.jpg"
     ],
     floorPlan: "apartments/one-artlane/floorplan.svg",
     planFile: "apartments/one-artlane/plan.js",
@@ -284,8 +305,15 @@ window.APARTMENTS = [
     notes_zh: "資料來源：28Hse #4065702。中層獨立單位附觀景露台，精緻全裝修拎包入住。",
     notes_cn: "资料来源：28Hse #4065702。中层独立单位带景观阳台，精装修拎包入住。",
     photos: [
-      "https://wm-cdn.midland.com.hk/img_wm_revamp.php?wm=mr&src=http%3A%2F%2Fimg.midland.com.hk%2Fphoto_db%2Foutlook%2Festate%2FEE000007840_26.jpg",
-      "apartments/beaudry-tower/photo-01.jpg"
+      "apartments/15-western-street/photo-01.jpg",
+      "apartments/15-western-street/photo-02.jpg",
+      "apartments/15-western-street/photo-03.jpg",
+      "apartments/15-western-street/photo-04.jpg",
+      "apartments/15-western-street/photo-05.jpg",
+      "apartments/15-western-street/photo-06.jpg",
+      "apartments/15-western-street/photo-07.jpg",
+      "apartments/15-western-street/photo-08.jpg",
+      "https://wm-cdn.midland.com.hk/img_wm_revamp.php?wm=mr&src=http%3A%2F%2Fimg.midland.com.hk%2Fphoto_db%2Foutlook%2Festate%2FEE000007840_26.jpg"
     ],
     floorPlan: "apartments/15-western-street/floorplan.svg",
     planFile: "apartments/15-western-street/plan.js",
@@ -350,10 +378,19 @@ window.APARTMENTS = [
     notes_zh: "大坑精品特色翻新盤，大廚房及開揚球場海景。",
     notes_cn: "大坑精品特色翻新盘，大厨房及开阔球场海景。",
     photos: [
-      "apartments/ming-sun-building/photo-01.jpg",
       "apartments/ming-sun-building/photo-02.jpg",
       "apartments/ming-sun-building/photo-03.jpg",
-      "apartments/ming-sun-building/photo-04.jpg"
+      "apartments/ming-sun-building/photo-04.jpg",
+      "apartments/ming-sun-building/photo-05.jpg",
+      "apartments/ming-sun-building/photo-06.jpg",
+      "apartments/ming-sun-building/photo-07.jpg",
+      "apartments/ming-sun-building/photo-08.jpg",
+      "apartments/ming-sun-building/photo-09.jpg",
+      "apartments/ming-sun-building/photo-10.jpg",
+      "apartments/ming-sun-building/photo-11.jpg",
+      "apartments/ming-sun-building/photo-01.jpg",
+      "apartments/ming-sun-building/photo-12.jpg",
+      "apartments/ming-sun-building/photo-13.jpg"
     ],
     floorPlan: "apartments/ming-sun-building/floorplan.jpg",
     planFile: "apartments/ming-sun-building/plan.js",
@@ -419,7 +456,12 @@ window.APARTMENTS = [
     photos: [
       "apartments/ying-wa-court/photo-01.jpg",
       "apartments/ying-wa-court/photo-02.jpg",
-      "apartments/ying-wa-court/photo-03.jpg"
+      "apartments/ying-wa-court/photo-03.jpg",
+      "apartments/ying-wa-court/photo-04.jpg",
+      "apartments/ying-wa-court/photo-05.jpg",
+      "apartments/ying-wa-court/photo-06.jpg",
+      "apartments/ying-wa-court/photo-07.jpg",
+      "apartments/ying-wa-court/photo-08.jpg"
     ],
     floorPlan: "apartments/ying-wa-court/floorplan.jpg",
     planFile: "apartments/ying-wa-court/plan.js",
@@ -485,7 +527,14 @@ window.APARTMENTS = [
     photos: [
       "apartments/beaudry-tower/photo-01.jpg",
       "apartments/beaudry-tower/photo-02.jpg",
-      "apartments/beaudry-tower/photo-03.jpg"
+      "apartments/beaudry-tower/photo-03.jpg",
+      "apartments/beaudry-tower/photo-04.jpg",
+      "apartments/beaudry-tower/photo-05.jpg",
+      "apartments/beaudry-tower/photo-06.jpg",
+      "apartments/beaudry-tower/photo-07.jpg",
+      "apartments/beaudry-tower/photo-08.jpg",
+      "apartments/beaudry-tower/photo-09.jpg",
+      "apartments/beaudry-tower/photo-10.jpg"
     ],
     floorPlan: "apartments/beaudry-tower/floorplan.jpg",
     planFile: "apartments/beaudry-tower/plan.js",
@@ -551,7 +600,12 @@ window.APARTMENTS = [
     photos: [
       "apartments/honor-villa/photo-01.jpg",
       "apartments/honor-villa/photo-02.jpg",
-      "apartments/honor-villa/photo-03.jpg"
+      "apartments/honor-villa/photo-03.jpg",
+      "apartments/honor-villa/photo-04.jpg",
+      "apartments/honor-villa/photo-05.jpg",
+      "apartments/honor-villa/photo-06.jpg",
+      "apartments/honor-villa/photo-07.jpg",
+      "apartments/honor-villa/photo-08.jpg"
     ],
     floorPlan: "apartments/honor-villa/floorplan.jpg",
     planFile: "apartments/honor-villa/plan.js",

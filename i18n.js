@@ -293,6 +293,41 @@
     "furn.box": { "en": "Custom piece", "zh-HK": "自訂尺寸家具", "zh-CN": "自定义尺寸家具" },
 
     // Compare tab
+    "compare.selectTitle": {
+      "en": "Select Properties to Compare",
+      "zh-HK": "自選對比樓盤",
+      "zh-CN": "自选对比房源"
+    },
+    "compare.selectDesc": {
+      "en": "Choose which apartments to include in the side-by-side comparison matrix and floor plan line-up.",
+      "zh-HK": "自選欲納入同屏橫向對比及圖則展示的物業單位。",
+      "zh-CN": "自选欲纳入同屏横向对比及户型展示的物业单位。"
+    },
+    "compare.selectAll": {
+      "en": "Select All",
+      "zh-HK": "全選",
+      "zh-CN": "全选"
+    },
+    "compare.clearAll": {
+      "en": "Deselect All",
+      "zh-HK": "清空",
+      "zh-CN": "清空"
+    },
+    "compare.selectedCount": {
+      "en": "selected",
+      "zh-HK": "個已選",
+      "zh-CN": "个已选"
+    },
+    "compare.emptySelectionTitle": {
+      "en": "No apartments selected for comparison",
+      "zh-HK": "尚未勾選任何對比樓盤",
+      "zh-CN": "尚未勾选任何对比房源"
+    },
+    "compare.emptySelectionHint": {
+      "en": "Click on one or more property badges above to compare them side-by-side.",
+      "zh-HK": "請點擊上方樓盤標籤選取至少一個物業進行多維對比。",
+      "zh-CN": "请点击上方房源标签选取至少一个物业进行多维对比。"
+    },
     "compare.title": {
       "en": "Interactive Scorecard Weighting",
       "zh-HK": "智能多維評分加權系統",

@@ -8,6 +8,7 @@
   // ---------- Data & Local Storage ----------
   const STORAGE_KEY_CUSTOM_APTS = "aptHunt.customApts";
   const STORAGE_KEY_WEIGHTS = "aptHunt.scoreWeights";
+  const STORAGE_KEY_COMPARE_SELECTION = "aptHunt.compareSelection";
 
   function loadCustomApts() {
     try {
@@ -20,6 +21,23 @@
   function saveCustomApts(list) {
     try {
       localStorage.setItem(STORAGE_KEY_CUSTOM_APTS, JSON.stringify(list));
+    } catch { /* private mode */ }
+  }
+
+  function loadCompareSelection() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_COMPARE_SELECTION);
+      if (!raw) return null;
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? new Set(arr) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveCompareSelection(set) {
+    try {
+      localStorage.setItem(STORAGE_KEY_COMPARE_SELECTION, JSON.stringify([...set]));
     } catch { /* private mode */ }
   }
 
@@ -39,9 +57,15 @@
   const money = (n) => (n || n === 0) && !isNaN(n) ? (window.CURRENCY || "$") + Number(Math.round(n)).toLocaleString() : "";
 
   // ---------- App state ----------
-  const state = { tab: "photos", aptId: null, showRuledOut: false };
   const visibleApts = () => APTS.filter((a) => a.enabled !== false || state.showRuledOut);
   const enabledApts = () => APTS.filter((a) => a.enabled !== false);
+  const savedCompare = loadCompareSelection();
+  const state = {
+    tab: "photos",
+    aptId: null,
+    showRuledOut: false,
+    selectedCompareIds: savedCompare && savedCompare.size > 0 ? savedCompare : new Set(enabledApts().map((a) => a.id))
+  };
   const currentApt = () => APTS.find((a) => a.id === state.aptId) || visibleApts()[0] || null;
 
   function readHash() {
@@ -326,7 +350,40 @@
   function renderCompareControls(weights) {
     const ctrl = $("#compare-controls");
     if (!ctrl) return;
+    const allEnabled = enabledApts();
+    const isZh = window.I18N && window.I18N.getLang() !== "en";
+    const selectedCount = allEnabled.filter((a) => state.selectedCompareIds.has(a.id)).length;
+
     ctrl.innerHTML = `
+      <div class="compare-selector-card">
+        <div class="compare-selector-header">
+          <div class="compare-selector-title">
+            <div style="display:flex;align-items:center;gap:8px">
+              <h4>${_t("compare.selectTitle", "Select Properties to Compare")}</h4>
+              <span class="compare-count-badge" id="compare-count-badge">${selectedCount} / ${allEnabled.length} ${_t("compare.selectedCount", "selected")}</span>
+            </div>
+            <div class="hint" style="margin:2px 0 0">${_t("compare.selectDesc", "Choose which apartments to include in the side-by-side comparison matrix and floor plan line-up.")}</div>
+          </div>
+          <div class="compare-selector-actions">
+            <button id="compare-select-all" class="btn-xs">${_t("compare.selectAll", "Select All")}</button>
+            <button id="compare-clear-all" class="btn-xs">${_t("compare.clearAll", "Deselect All")}</button>
+          </div>
+        </div>
+        <div class="compare-chip-list">
+          ${allEnabled.map((a) => {
+            const isSel = state.selectedCompareIds.has(a.id);
+            const price = money(a.rent) ? `${money(a.rent)}${isZh ? "/月" : "/mo"}` : "";
+            return `
+              <button type="button" class="compare-chip ${isSel ? "active" : ""}" data-id="${a.id}">
+                <span class="chip-check">${isSel ? "✓" : "+"}</span>
+                <span class="chip-name">${esc(_aptField(a, "name") || a.name || a.id)}</span>
+                ${price ? `<span class="chip-price">${price}</span>` : ""}
+              </button>
+            `;
+          }).join("")}
+        </div>
+      </div>
+
       <div class="compare-ctrl-header">
         <div>
           <h3>${_t("compare.title", "Interactive Scorecard Weighting")}</h3>
@@ -352,6 +409,60 @@
         </div>
       </div>
     `;
+
+    const updateCountBadge = () => {
+      const badge = $("#compare-count-badge");
+      if (badge) {
+        const count = allEnabled.filter((a) => state.selectedCompareIds.has(a.id)).length;
+        badge.textContent = `${count} / ${allEnabled.length} ${_t("compare.selectedCount", "selected")}`;
+      }
+    };
+
+    ctrl.querySelectorAll(".compare-chip").forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        if (state.selectedCompareIds.has(id)) {
+          state.selectedCompareIds.delete(id);
+          btn.classList.remove("active");
+          btn.querySelector(".chip-check").textContent = "+";
+        } else {
+          state.selectedCompareIds.add(id);
+          btn.classList.add("active");
+          btn.querySelector(".chip-check").textContent = "✓";
+        }
+        saveCompareSelection(state.selectedCompareIds);
+        updateCountBadge();
+        renderCompareTable();
+      };
+    });
+
+    const selAllBtn = $("#compare-select-all");
+    if (selAllBtn) {
+      selAllBtn.onclick = () => {
+        allEnabled.forEach((a) => state.selectedCompareIds.add(a.id));
+        saveCompareSelection(state.selectedCompareIds);
+        ctrl.querySelectorAll(".compare-chip").forEach((btn) => {
+          btn.classList.add("active");
+          btn.querySelector(".chip-check").textContent = "✓";
+        });
+        updateCountBadge();
+        renderCompareTable();
+      };
+    }
+
+    const clearAllBtn = $("#compare-clear-all");
+    if (clearAllBtn) {
+      clearAllBtn.onclick = () => {
+        state.selectedCompareIds.clear();
+        saveCompareSelection(state.selectedCompareIds);
+        ctrl.querySelectorAll(".compare-chip").forEach((btn) => {
+          btn.classList.remove("active");
+          btn.querySelector(".chip-check").textContent = "+";
+        });
+        updateCountBadge();
+        renderCompareTable();
+      };
+    }
 
     const bindSlider = (id, key) => {
       const slider = $(`#slider-w-${id}`);
@@ -382,10 +493,35 @@
   }
 
   async function renderCompareTable() {
-    const apts = enabledApts();
+    const allEnabled = enabledApts();
+    const apts = allEnabled.filter((a) => state.selectedCompareIds.has(a.id));
     const table = $("#compare-table");
     const plans = $("#compare-plans");
-    if (!apts.length) { table.innerHTML = ""; plans.innerHTML = `<div class="empty">${_t("sidebar.empty", "No apartments enabled.")}</div>`; return; }
+
+    if (!allEnabled.length) {
+      table.innerHTML = "";
+      plans.innerHTML = `<div class="empty">${_t("sidebar.empty", "No apartments enabled.")}</div>`;
+      return;
+    }
+
+    if (!apts.length) {
+      table.innerHTML = `<tbody><tr><td colspan="100%" class="empty compare-empty-state">
+        <div style="font-size:32px;margin-bottom:8px">⚖️</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px">${_t("compare.emptySelectionTitle", "No apartments selected for comparison")}</div>
+        <div class="hint" style="margin-bottom:14px">${_t("compare.emptySelectionHint", "Click on one or more property badges above to compare them side-by-side.")}</div>
+        <button id="compare-empty-select-all" class="btn primary">${_t("compare.selectAll", "Select All")}</button>
+      </td></tr></tbody>`;
+      const emptyBtn = $("#compare-empty-select-all");
+      if (emptyBtn) {
+        emptyBtn.onclick = () => {
+          allEnabled.forEach((a) => state.selectedCompareIds.add(a.id));
+          saveCompareSelection(state.selectedCompareIds);
+          renderCompare();
+        };
+      }
+      plans.innerHTML = `<div class="empty">${_t("compare.emptySelectionHint", "Click on one or more property badges above to view their floor plans.")}</div>`;
+      return;
+    }
 
     const weights = loadScoreWeights();
     const scores = apts.map((a) => calcCompositeScore(a, apts, weights));
