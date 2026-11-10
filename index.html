@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apartment Hunt</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="menu-btn" class="icon-btn" aria-label="Apartments">☰</button>
+    <h1>Apartment Hunt</h1>
+    <nav class="tabs" role="tablist">
+      <button data-tab="photos" role="tab">Photos</button>
+      <button data-tab="plan" role="tab">Floor plan</button>
+      <button data-tab="compare" role="tab">Compare</button>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-head">
+        <div class="sidebar-title-row">
+          <h2>Apartments</h2>
+          <button id="btn-add-apt" class="btn-xs" title="Add or import a new listing">+ Add</button>
+        </div>
+        <label class="check"><input type="checkbox" id="show-ruled-out"> Show ruled out</label>
+      </div>
+      <ul id="apt-list" class="apt-list"></ul>
+      <p class="hint">To add or rule out apartments, edit <code>apartments.js</code> or click <b>+ Add</b>.</p>
+    </aside>
+
+    <main id="main">
+      <!-- Photos -->
+      <section id="tab-photos" class="tab-panel">
+        <div id="apt-header" class="apt-header"></div>
+        <div id="gallery" class="gallery"></div>
+      </section>
+
+      <!-- Floor plan: 2D/3D planner (planner.js) -->
+      <section id="tab-plan" class="tab-panel"><div id="plan-root"></div></section>
+
+      <!-- Compare -->
+      <section id="tab-compare" class="tab-panel">
+        <div id="compare-controls" class="compare-controls"></div>
+        <div class="compare-scroll"><table id="compare-table" class="compare-table"></table></div>
+        <details id="rubric" class="rubric"></details>
+        <h2 class="section-title">Floor plans at the same scale</h2>
+        <p class="hint">Every plan below is drawn at the same scale with its furniture, so sizes compare directly.</p>
+        <div id="compare-plans" class="compare-plans"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="lightbox" class="lightbox" hidden>
+    <button class="lb-close" aria-label="Close">×</button>
+    <button class="lb-prev" aria-label="Previous">‹</button>
+    <img id="lb-img" alt="">
+    <button class="lb-next" aria-label="Next">›</button>
+    <div id="lb-count" class="lb-count"></div>
+  </div>
+
+  <dialog id="export-dialog">
+    <h3>Export</h3>
+    <p class="hint">Download this file and drop it in the repo (or send it to Claude), and it will be merged into <code>apartments.js</code>.</p>
+    <textarea id="export-text" readonly></textarea>
+    <div class="btn-row">
+      <button id="export-copy">Copy</button>
+      <button id="export-download">Download</button>
+      <button id="export-close">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Add / Import Listing Dialog -->
+  <dialog id="add-dialog">
+    <h3>Add / Import Apartment Listing</h3>
+    <p class="hint">Add a new rental listing to compare immediately. It saves to your browser and can be exported.</p>
+    <form id="add-apt-form">
+      <div class="form-grid">
+        <label>
+          <span>Apartment Name *</span>
+          <input type="text" id="add-name" placeholder="e.g. Robinson Heights, Flat B" required>
+        </label>
+        <label>
+          <span>Building Name</span>
+          <input type="text" id="add-building" placeholder="e.g. Robinson Heights">
+        </label>
+        <label>
+          <span>District / Address *</span>
+          <input type="text" id="add-address" placeholder="e.g. 8 Robinson Road, Mid-Levels West" required>
+        </label>
+        <label>
+          <span>Monthly Rent (HK$) *</span>
+          <input type="number" id="add-rent" placeholder="e.g. 26000" min="1000" required>
+        </label>
+        <label>
+          <span>Management Fees</span>
+          <input type="text" id="add-fees" placeholder="e.g. Included or HK$1,500/mo">
+        </label>
+        <label>
+          <span>Saleable Sq Ft</span>
+          <input type="number" id="add-sqft" placeholder="e.g. 510" min="50">
+        </label>
+        <label>
+          <span>Bedrooms</span>
+          <input type="number" id="add-beds" placeholder="e.g. 2" min="0" max="10">
+        </label>
+        <label>
+          <span>Bathrooms</span>
+          <input type="number" id="add-baths" placeholder="e.g. 1" min="0" max="10">
+        </label>
+        <label>
+          <span>Nearest MTR & Walk (min)</span>
+          <input type="text" id="add-mtr" placeholder="e.g. Sai Ying Pun, 6">
+        </label>
+        <label>
+          <span>Listing URL (28Hse, etc.)</span>
+          <input type="url" id="add-url" placeholder="https://www.28hse.com/...">
+        </label>
+      </div>
+      <label class="form-block">
+        <span>Photo URLs (comma-separated or one per line)</span>
+        <textarea id="add-photos" placeholder="https://...jpg, https://...png" style="height:60px"></textarea>
+      </label>
+      <label class="form-block">
+        <span>Floor Plan Image URL</span>
+        <input type="url" id="add-floorplan" placeholder="https://...floorplan.jpg">
+      </label>
+      <label class="form-block">
+        <span>Notes / Highlights</span>
+        <input type="text" id="add-notes" placeholder="e.g. Newly painted, high floor with open greenery view">
+      </label>
+      <div class="btn-row" style="margin-top:14px">
+        <button type="submit" class="btn primary">Add Listing</button>
+        <button type="button" id="add-cancel" class="btn">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="apartments.js"></script>
+  <script src="planner.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
