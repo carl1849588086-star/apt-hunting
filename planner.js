@@ -264,7 +264,7 @@
     let uid = Math.max(0, ...items.map((i) => i.id || 0)) + 1;
     items.forEach((i) => { if (!i.id) i.id = uid++; });
     let sel = null, showDims = true, mode = "move", pts = [], view = null, imgSize = null, tab = "2d";
-    let camMode = "orbit", sunPreset = "noon";
+    let camMode = "orbit";
 
     const persist = () => { const s = loadSaved(apt.id); s.items = items; storeSaved(apt.id, s); };
 
@@ -294,12 +294,6 @@
           <div class="ptop">
             <div class="seg view-seg"><button data-v="2d" class="on">Plan</button><button data-v="3d">3D</button></div>
             <div class="seg cam-seg" style="display:none"><button data-c="orbit" class="on">Orbit</button><button data-c="fps">Walkthrough</button></div>
-            <div class="seg sun-seg" style="display:none">
-              <button data-s="morning">🌅 9 AM</button>
-              <button data-s="noon" class="on">☀️ 1 PM</button>
-              <button data-s="golden">🌇 5 PM</button>
-              <button data-s="night">🌙 9 PM</button>
-            </div>
             <div class="seg tool-seg">
               <button data-m="move" class="on">Move</button>
               <button data-m="measure">Measure</button>
@@ -563,35 +557,13 @@
       root.querySelectorAll(".view-seg button").forEach((x) => x.classList.toggle("on", x.dataset.v === v));
       $(".stage2d").hidden = v === "3d"; $(".stage3d").hidden = v !== "3d";
       [".tool-seg", ".zoom-seg", ".toolbar"].forEach((q) => { const n = root.querySelector(q); if (n) n.style.display = v === "3d" ? "none" : ""; });
-      [".cam-seg", ".sun-seg"].forEach((q) => { const n = root.querySelector(q); if (n) n.style.display = v === "3d" ? "inline-flex" : "none"; });
-      $(".src-note").textContent = v === "3d" ? "3D Mode: Switch between Orbit and First-Person Walkthrough, and adjust sunlight time-of-day." : (P ? P.source || "" : "");
+      const camSeg = root.querySelector(".cam-seg"); if (camSeg) camSeg.style.display = v === "3d" ? "inline-flex" : "none";
+      $(".src-note").textContent = v === "3d" ? "3D Mode: Switch between Orbit and First-Person Walkthrough." : (P ? P.source || "" : "");
       if (v === "3d") {
         if (!window.THREE) { $(".view3d").innerHTML = `<p class="note" style="padding:16px">The 3D view needs Three.js which didn't load.</p>`; return; }
         if (!scaleReady()) { $(".view3d").innerHTML = `<p class="note" style="padding:16px">Set the plan's scale first.</p>`; return; }
         init3d(); build3dFurniture();
       }
-    }
-
-    // Sunlight presets
-    const SUN_PRESETS = {
-      morning: { sunPos: [-1.2, 0.6, -0.7], color: 0xffedd5, hemiSky: 0x93c5fd, hemiGround: 0x78716c, intensity: 0.85, bg: 0xe0e7ff },
-      noon: { sunPos: [-0.3, 1.4, -0.4], color: 0xffffff, hemiSky: 0xffffff, hemiGround: 0x8a8070, intensity: 0.95, bg: 0xe9eef0 },
-      golden: { sunPos: [1.3, 0.4, 0.5], color: 0xf97316, hemiSky: 0xfdba74, hemiGround: 0x443322, intensity: 0.9, bg: 0x451a03 },
-      night: { sunPos: [0, 1, 0], color: 0x38bdf8, hemiSky: 0xfef08a, hemiGround: 0x1e293b, intensity: 0.15, bg: 0x0f172a }
-    };
-
-    function applySunlight(preset) {
-      if (!R3) return;
-      sunPreset = preset;
-      const b = boundsOf(apt, imgSize);
-      const cx = (b[0] + b[2]) / 2, cz = (b[1] + b[3]) / 2, span = Math.max(b[2] - b[0], b[3] - b[1]);
-      const cfg = SUN_PRESETS[preset] || SUN_PRESETS.noon;
-      R3.sun.position.set(cx + cfg.sunPos[0] * span, cfg.sunPos[1] * span, cz + cfg.sunPos[2] * span);
-      R3.sun.color.setHex(cfg.color);
-      R3.sun.intensity = cfg.intensity;
-      R3.hemi.color.setHex(cfg.hemiSky);
-      R3.hemi.groundColor.setHex(cfg.hemiGround);
-      R3.scene.background.setHex(cfg.bg);
     }
 
     function init3d() {
@@ -653,13 +625,6 @@
         };
       });
 
-      // Sunlight buttons
-      root.querySelectorAll(".sun-seg button").forEach((btn) => {
-        btn.onclick = () => {
-          applySunlight(btn.dataset.s);
-          root.querySelectorAll(".sun-seg button").forEach((x) => x.classList.toggle("on", x === btn));
-        };
-      });
 
       // Mouse Drag & Click Walking in Walkthrough Mode
       renderer.domElement.addEventListener("pointerdown", (e) => {
